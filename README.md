@@ -11,11 +11,14 @@ must never be committed to GitHub.
 
 ## Local setup
 
-This project uses `uv`.
+The repository is a notebook project, not a Python package. Its Dapla Lab
+startup script creates a local virtual environment for the notebook.
 
 ```bash
-uv sync
-uv run python -m ipykernel install --user --name metamapper-testdata-generator \
+python3 -m venv .venv
+.venv/bin/python -m pip install -r requirements.txt
+.venv/bin/python -m ipykernel install --user \
+  --name metamapper-testdata-generator \
   --display-name "Python (metamapper testdata generator)"
 ```
 
@@ -42,10 +45,12 @@ Start a **Vscode-python** service in Dapla Lab and configure:
    Do not enter the full GitHub URL in the **Bash-skript** field. Leave
    **Arguments** empty.
 
-The repository is cloned into `$HOME/work/metamapper-testdata-generator`. The
-startup script then runs `uv sync`, creates the project kernel, and configures
-VS Code to use `.venv/bin/python`. Open the notebook and select:
-`Python (metamapper testdata generator)`.
+The repository is cloned into `$HOME/work/metamapper-testdata-generator` by
+Dapla Lab. The startup script also clones it there if the Dapla Git clone is
+not available. It then creates `.venv`, installs `requirements.txt`, registers
+the project kernel, and configures VS Code to use `.venv/bin/python`. Open
+`notebooks/generate_test_data.ipynb`; the kernel
+`Python (metamapper testdata generator)` should already be selected.
 
 The bucket must be available to the Dapla Lab service and the selected access
 group must have write access. The default bucket is configured in the notebook
