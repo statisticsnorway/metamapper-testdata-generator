@@ -21,15 +21,25 @@ Open `notebooks/generate_test_data.ipynb` and select the registered kernel.
 
 Start a **Vscode-python** service in Dapla Lab and configure:
 
-1. Clone this repository under the **Git/GitHub** configuration.
+1. Under **Git/GitHub -> Repo**, enter:
+
+   ```text
+   https://github.com/statisticsnorway/metamapper-testdata-generator.git
+   ```
+
 2. Select the team and access group that can write to the target bucket.
-3. Under **Advanced -> Startup script**, enter:
+3. Under **Advanced -> Oppstartsskript -> Bash-skript**, enter only the
+   repository name and script path:
 
    ```text
    metamapper-testdata-generator/init.sh
    ```
 
-The startup script runs `uv sync`, creates the project kernel, and configures
+   Do not enter the full GitHub URL in the **Bash-skript** field. Leave
+   **Arguments** empty.
+
+The repository is cloned into `$HOME/work/metamapper-testdata-generator`. The
+startup script then runs `uv sync`, creates the project kernel, and configures
 VS Code to use `.venv/bin/python`. Open the notebook and select:
 `Python (metamapper testdata generator)`.
 
