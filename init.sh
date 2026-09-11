@@ -35,6 +35,7 @@ if ! command -v "$PYTHON" >/dev/null 2>&1; then
 fi
 
 VENV_DIR="$PROJECT_DIR/.venv"
+WORKSPACE_DIR="${WORKSPACE_DIR:-$HOME/work}"
 
 if [[ ! -x "$VENV_DIR/bin/python" ]]; then
     echo "$LOG_PREFIX Creating the notebook environment in $VENV_DIR"
@@ -85,5 +86,16 @@ cat > "$PROJECT_DIR/.vscode/settings.json" <<EOF
     ]
 }
 EOF
+
+# Dapla commonly opens $HOME/work as the code-server workspace, so also place
+# the interpreter setting where VS Code can load it for the repository.
+mkdir -p "$WORKSPACE_DIR/.vscode"
+cat > "$WORKSPACE_DIR/.vscode/settings.json" <<EOF
+{
+    "python.defaultInterpreterPath": "$VENV_DIR/bin/python"
+}
+EOF
+
+echo "$LOG_PREFIX Kernel ready: $KERNEL_NAME"
 
 echo "$LOG_PREFIX Environment ready. Select '$KERNEL_DISPLAY_NAME' in VS Code."
