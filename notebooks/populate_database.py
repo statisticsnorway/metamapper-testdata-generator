@@ -182,6 +182,12 @@ def check_deleted_datasets_in_datadoc(
     if remaining:
         for path, status in remaining:
             print(f"[datadoc]   {status}: {path}")
+        if any(status == 401 for _, status in remaining):
+            raise PermissionError(
+                "Datadoc rejected the token (HTTP 401). The token must include "
+                "the 'datadoc' audience. Set DATADOC_API_TOKEN or use the Dapla "
+                "authentication flow with audiences=['datadoc']."
+            )
         raise AssertionError("Deleted datasets are still indexed in Datadoc")
 
     print("[datadoc] All deleted datasets are absent")
@@ -226,6 +232,12 @@ def check_valid_datasets_in_datadoc(
             print(f"[datadoc]   {status}: {path}")
 
     if missing or unexpected_statuses:
+        if any(status == 401 for _, status in unexpected_statuses):
+            raise PermissionError(
+                "Datadoc rejected the token (HTTP 401). The token must include "
+                "the 'datadoc' audience. Set DATADOC_API_TOKEN or use the Dapla "
+                "authentication flow with audiences=['datadoc']."
+            )
         raise AssertionError("Datadoc does not contain all valid datasets")
 
     print("[datadoc] All valid datasets are registered")
@@ -251,7 +263,7 @@ def _datadoc_connection(
     if token is None:
         from dapla_auth_client import AuthClient
 
-        token = AuthClient.fetch_personal_token()
+        token = AuthClient.fetch_personal_token(audiences=["datadoc"])
     return api_url, {"Authorization": f"Bearer {token}"}
 
 
