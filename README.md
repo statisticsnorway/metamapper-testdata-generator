@@ -49,7 +49,7 @@ The repository is cloned into `$HOME/work/metamapper-testdata-generator` by
 Dapla Lab. The startup script also clones it there if the Dapla Git clone is
 not available. It then creates `.venv`, installs `requirements.txt`, registers
 the project kernel, writes that kernel to the notebook metadata, and configures
-VS Code to use `.venv/bin/python`. Open
+VS Code at the Dapla workspace level to use `.venv/bin/python`. Open
 `notebooks/generate_test_data.ipynb` and press Play; the kernel
 `Python (metamapper testdata generator)` should already be selected.
 
