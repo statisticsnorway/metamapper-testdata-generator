@@ -48,8 +48,9 @@ Start a **Vscode-python** service in Dapla Lab and configure:
 The repository is cloned into `$HOME/work/metamapper-testdata-generator` by
 Dapla Lab. The startup script also clones it there if the Dapla Git clone is
 not available. It then creates `.venv`, installs `requirements.txt`, registers
-the project kernel, and configures VS Code to use `.venv/bin/python`. Open
-`notebooks/generate_test_data.ipynb`; the kernel
+the project kernel, writes that kernel to the notebook metadata, and configures
+VS Code to use `.venv/bin/python`. Open
+`notebooks/generate_test_data.ipynb` and press Play; the kernel
 `Python (metamapper testdata generator)` should already be selected.
 
 The bucket must be available to the Dapla Lab service and the selected access

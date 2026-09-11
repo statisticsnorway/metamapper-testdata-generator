@@ -51,6 +51,25 @@ echo "$LOG_PREFIX Registering the notebook kernel"
     --name "$KERNEL_NAME" \
     --display-name "$KERNEL_DISPLAY_NAME"
 
+echo "$LOG_PREFIX Selecting the project kernel for notebooks"
+"$VENV_DIR/bin/python" - "$PROJECT_DIR/notebooks" "$KERNEL_NAME" "$KERNEL_DISPLAY_NAME" <<'PY'
+import json
+import pathlib
+import sys
+
+notebooks_dir = pathlib.Path(sys.argv[1])
+kernelspec = {
+    "display_name": sys.argv[3],
+    "language": "python",
+    "name": sys.argv[2],
+}
+
+for notebook_path in notebooks_dir.glob("*.ipynb"):
+    notebook = json.loads(notebook_path.read_text())
+    notebook.setdefault("metadata", {})["kernelspec"] = kernelspec
+    notebook_path.write_text(json.dumps(notebook, indent=1) + "\n")
+PY
+
 # Make the project interpreter the default interpreter when the repository is
 # opened in code-server. The file is local service configuration, not project
 # source code.
