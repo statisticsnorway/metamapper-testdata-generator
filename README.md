@@ -51,17 +51,15 @@ not available. It then creates `.venv`, installs `requirements.txt`, registers
 the project kernel, writes that kernel to the notebook metadata, and configures
 VS Code at the Dapla workspace level to use `.venv/bin/python`. Open
 `notebooks/generate_test_data.ipynb` contains four titled steps: populate the
-bucket, check that all 150 valid datasets are indexed, delete 20 valid datasets,
-and check that those deleted datasets are removed from Datadoc. The
-implementation is kept in `notebooks/populate_database.py`.
+bucket, check indexing, delete 20 valid datasets, and check deletion from
+Datadoc. The notebook includes a warning that the Datadoc checks currently
+fail because the test service does not trust the LabID issuer. The implementation is kept in
+`notebooks/populate_database.py`.
 
 After each GCS operation, the notebook triggers the test Metamapper dispatcher
 to reload its configured bucket. Override `METAMAPPER_DISPATCHER_URL` when
 using another dispatcher environment.
 
-Datadoc checks use the test API by default:
-`https://metadata.intern.test.ssb.no`. Set `DATADOC_API_URL` to
-`https://metadata.intern.ssb.no` when checking production metadata.
 
 The bucket must be available to the Dapla Lab service and the selected access
 group must have write access. The default bucket is configured in the notebook
