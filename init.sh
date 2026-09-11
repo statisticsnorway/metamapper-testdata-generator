@@ -90,6 +90,22 @@ cat > "$WORKSPACE_DIR/.vscode/settings.json" <<EOF
 }
 EOF
 
+WORKSPACE_GLOB="$HOME/.local/share/code-server/User/Workspaces/*.code-workspace"
+shopt -s nullglob
+WORKSPACE_FILES=( $WORKSPACE_GLOB )
+shopt -u nullglob
+
+if [[ "${#WORKSPACE_FILES[@]}" -gt 0 ]] && command -v jq >/dev/null 2>&1; then
+    WORKSPACE_FILE="${WORKSPACE_FILES[0]}"
+    echo "$LOG_PREFIX Configuring code-server workspace $WORKSPACE_FILE"
+    jq --arg interpreter "$VENV_DIR/bin/python" \
+       --arg project "$PROJECT_DIR" \
+       '.settings = ((.settings // {}) + {"python.defaultInterpreterPath": $interpreter}) |
+        .folders = [{"path": $project}]' \
+       "$WORKSPACE_FILE" > "$WORKSPACE_FILE.tmp"
+    mv "$WORKSPACE_FILE.tmp" "$WORKSPACE_FILE"
+fi
+
 echo "$LOG_PREFIX Kernel ready: $KERNEL_NAME"
 
 echo "$LOG_PREFIX Environment ready. Select '$KERNEL_DISPLAY_NAME' in VS Code."
