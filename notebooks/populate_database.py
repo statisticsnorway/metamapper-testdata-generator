@@ -78,6 +78,7 @@ def _invalid_files() -> list[str]:
 
 
 def populate_database() -> None:
+    print(f"[populate] Starting test data generation in gs://{BUCKET}")
     fs = gcsfs.GCSFileSystem()
     data = _create_test_data()
     valid_count = 0
@@ -88,10 +89,12 @@ def populate_database() -> None:
             path = f"{product}/{state}/{description}_p{period}_v{version}.parquet"
             _write_parquet(fs, path, data)
             valid_count += 1
+    print(f"[populate] Created {valid_count} valid datasets")
 
     for path in _invalid_files():
         _write_parquet(fs, path, data)
         invalid_count += 1
+    print(f"[populate] Created {invalid_count} invalid datasets")
 
     print("Finished generating test files.")
     print(f"Valid files:   {valid_count}")
@@ -100,3 +103,21 @@ def populate_database() -> None:
     print(f"Bucket:        gs://{BUCKET}")
     assert valid_count == 150
     assert invalid_count == 50
+
+
+def delete_valid_datasets() -> None:
+    """Delete 20 valid datasets to simulate missing files."""
+    print(f"[delete] Starting deletion in gs://{BUCKET}")
+    filesystem = gcsfs.GCSFileSystem()
+    paths = [
+        f"{product}/{state}/{description}_p{period}_v{version}.parquet"
+        for product, state, description in VALID_DATASETS[:2]
+        for period, version in PERIODS_AND_VERSIONS[:10]
+    ]
+
+    for path in paths:
+        filesystem.rm(f"{BUCKET}/{path}")
+        print(f"[delete] Removed {path}")
+
+    print(f"Deleted valid datasets: {len(paths)}")
+    print(f"Bucket:              gs://{BUCKET}")
