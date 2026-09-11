@@ -1,0 +1,16 @@
+[project]
+name = "metamapper-testdata-generator"
+version = "0.1.0"
+description = "Generate deterministic Parquet test data for metamapper"
+requires-python = ">=3.11,<3.14"
+dependencies = [
+    "gcsfs>=2024.6.0",
+    "ipykernel>=6.29.0",
+    "pandas>=2.2.0",
+    "pyarrow>=16.0.0",
+]
+
+[dependency-groups]
+dev = [
+    "nbformat>=5.10.0",
+]
