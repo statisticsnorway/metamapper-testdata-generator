@@ -5,6 +5,10 @@ GCS bucket. The generated data contains 150 files with valid names and 50
 files with deliberately invalid names for testing metadata discovery and
 validation.
 
+This is an open-source utility repository. It contains code and a small,
+synthetic test-data definition only. Generated Parquet files and credentials
+must never be committed to GitHub.
+
 ## Local setup
 
 This project uses `uv`.
@@ -57,3 +61,10 @@ gs://ssb-play-enhjoern-a-data-produkt-test
 
 Running the notebook again overwrites files with the same paths. It does not
 delete other files from the bucket.
+
+## Contributions and maintenance
+
+Changes are made through pull requests to `main`. At least one approval is
+required before a pull request can be merged. Please see [SECURITY.md](SECURITY.md)
+for reporting security vulnerabilities and [LICENSE.md](LICENSE.md) for the
+license.
