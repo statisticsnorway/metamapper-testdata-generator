@@ -9,6 +9,10 @@ import requests
 
 
 BUCKET = "ssb-play-enhjoern-a-data-produkt-test"
+DISPATCHER_URL = os.getenv(
+    "METAMAPPER_DISPATCHER_URL",
+    "https://metamapper-dispatcher.test.ssb.no",
+)
 VALID_DATASETS = [
     ("befolkning", "inndata", "befolkning"),
     ("befolkning", "statistikk", "befolkning-kommuner"),
@@ -52,6 +56,21 @@ def _create_test_data() -> pd.DataFrame:
 def _write_parquet(fs: gcsfs.GCSFileSystem, path: str, data: pd.DataFrame) -> None:
     with fs.open(f"{BUCKET}/{path}", "wb") as file:
         data.to_parquet(file, index=False)
+
+
+def _trigger_dispatcher() -> None:
+    """Ask the dispatcher to reload its configured bucket."""
+    print(f"[dispatcher] Triggering bucket reload at {DISPATCHER_URL}")
+    response = requests.post(
+        f"{DISPATCHER_URL.rstrip('/')}/manual-bucket-loads",
+        timeout=30,
+    )
+    if response.status_code not in (200, 201):
+        raise RuntimeError(
+            f"Dispatcher trigger failed with HTTP {response.status_code}: "
+            f"{response.text}"
+        )
+    print(f"[dispatcher] Bucket reload queued (HTTP {response.status_code})")
 
 
 def _invalid_files() -> list[str]:
@@ -115,6 +134,7 @@ def populate_database() -> None:
     print(f"Bucket:        gs://{BUCKET}")
     assert valid_count == 150
     assert invalid_count == 50
+    _trigger_dispatcher()
 
 
 def delete_valid_datasets() -> None:
@@ -133,6 +153,7 @@ def delete_valid_datasets() -> None:
 
     print(f"Deleted valid datasets: {len(paths)}")
     print(f"Bucket:              gs://{BUCKET}")
+    _trigger_dispatcher()
 
 
 def check_valid_datasets_in_datadoc(

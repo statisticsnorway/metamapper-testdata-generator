@@ -56,6 +56,10 @@ datasets in Datadoc`. The second cell deletes 20 valid datasets; the third
 checks that all 150 valid datasets are registered in Datadoc. Their
 implementation is kept in `notebooks/populate_database.py`.
 
+After each GCS operation, the notebook triggers the test Metamapper dispatcher
+to reload its configured bucket. Override `METAMAPPER_DISPATCHER_URL` when
+using another dispatcher environment.
+
 The bucket must be available to the Dapla Lab service and the selected access
 group must have write access. The default bucket is configured in the notebook
 and can be changed in its first code cell.
