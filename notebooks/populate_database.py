@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import base64
+import json
 import os
 import time
 from urllib.parse import quote
@@ -259,12 +261,42 @@ def _datadoc_connection(
         "DATADOC_API_URL",
         "https://metadata.intern.test.ssb.no",
     )
+    token_source = "argument" if token is not None else "DATADOC_API_TOKEN"
     token = token or os.getenv("DATADOC_API_TOKEN")
     if token is None:
         from dapla_auth_client import AuthClient
 
         token = AuthClient.fetch_personal_token(audiences=["datadoc"])
+        token_source = "LabID audience=datadoc"
+
+    claims = _read_unverified_claims(token)
+    audience = claims.get("aud")
+    issuer = claims.get("iss")
+    print(f"[datadoc] Endpoint: {api_url}")
+    print(f"[datadoc] Token source: {token_source}")
+    print(f"[datadoc] Token issuer: {issuer}")
+    print(f"[datadoc] Token audience: {audience}")
+    print(f"[datadoc] Token expiry: {claims.get('exp')}")
+    if audience != "datadoc" and not (
+        isinstance(audience, list) and "datadoc" in audience
+    ):
+        print("[datadoc] WARNING: token does not contain the 'datadoc' audience")
+    else:
+        print("[datadoc] Token is configured for Datadoc")
     return api_url, {"Authorization": f"Bearer {token}"}
+
+
+def _read_unverified_claims(token: str) -> dict:
+    """Read JWT claims for diagnostics without validating or printing the token."""
+    try:
+        encoded_claims = token.split(".")[1]
+        padding = "=" * (-len(encoded_claims) % 4)
+        return json.loads(
+            base64.urlsafe_b64decode(encoded_claims + padding).decode("utf-8")
+        )
+    except (IndexError, ValueError, json.JSONDecodeError, UnicodeDecodeError) as error:
+        print(f"[datadoc] WARNING: could not decode token claims: {error}")
+        return {}
 
 
 def _get_datadoc_file(
