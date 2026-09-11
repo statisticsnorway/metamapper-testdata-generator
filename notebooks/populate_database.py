@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import time
 from urllib.parse import quote
 
 import gcsfs
@@ -156,38 +157,60 @@ def delete_valid_datasets() -> None:
     _trigger_dispatcher()
 
 
+def check_deleted_datasets_in_datadoc(
+    api_url: str | None = None,
+    token: str | None = None,
+) -> None:
+    """Verify that the 20 deleted datasets are absent from Datadoc."""
+    api_url, headers = _datadoc_connection(api_url, token)
+    paths = _deleted_valid_paths()
+    print(f"[datadoc] Checking {len(paths)} deleted datasets at {api_url}")
+
+    remaining = [(path, 200) for path in paths]
+    for attempt in range(1, 13):
+        remaining = []
+        for path in paths:
+            response = _get_datadoc_file(api_url, headers, path)
+            if response.status_code != 404:
+                remaining.append((path, response.status_code))
+        if not remaining:
+            break
+        print(f"[datadoc] Waiting for deletion ({attempt}/12)")
+        time.sleep(5)
+
+    print(f"[datadoc] Still indexed: {len(remaining)}")
+    if remaining:
+        for path, status in remaining:
+            print(f"[datadoc]   {status}: {path}")
+        raise AssertionError("Deleted datasets are still indexed in Datadoc")
+
+    print("[datadoc] All deleted datasets are absent")
+
+
 def check_valid_datasets_in_datadoc(
     api_url: str | None = None,
     token: str | None = None,
 ) -> None:
     """Verify that all valid datasets are registered in Datadoc."""
-    api_url = api_url or os.getenv(
-        "DATADOC_API_URL",
-        "https://metadata.intern.ssb.no",
-    )
-    token = token or os.getenv("DATADOC_API_TOKEN")
-    if token is None:
-        from dapla_auth_client import AuthClient
-
-        token = AuthClient.fetch_personal_token()
-
-    headers = {"Authorization": f"Bearer {token}"}
-    missing = []
-    unexpected_statuses = []
+    api_url, headers = _datadoc_connection(api_url, token)
     paths = _valid_paths()
     print(f"[datadoc] Checking {len(paths)} valid datasets at {api_url}")
 
-    for path in paths:
-        file_path = f"gs://{BUCKET}/{path}"
-        response = requests.get(
-            f"{api_url.rstrip('/')}/data-files/{quote(file_path, safe='')}",
-            headers=headers,
-            timeout=30,
-        )
-        if response.status_code == 404:
-            missing.append(path)
-        elif response.status_code != 200:
-            unexpected_statuses.append((path, response.status_code))
+    missing = set(paths)
+    unexpected_statuses = []
+    for attempt in range(1, 13):
+        next_missing = set()
+        for path in missing:
+            response = _get_datadoc_file(api_url, headers, path)
+            if response.status_code == 404:
+                next_missing.add(path)
+            elif response.status_code != 200:
+                unexpected_statuses.append((path, response.status_code))
+        missing = next_missing
+        if not missing or unexpected_statuses:
+            break
+        print(f"[datadoc] Waiting for indexing ({attempt}/12)")
+        time.sleep(5)
 
     print(f"[datadoc] Found:   {len(paths) - len(missing) - len(unexpected_statuses)}")
     print(f"[datadoc] Missing:  {len(missing)}")
@@ -206,3 +229,40 @@ def check_valid_datasets_in_datadoc(
         raise AssertionError("Datadoc does not contain all valid datasets")
 
     print("[datadoc] All valid datasets are registered")
+
+
+def _deleted_valid_paths() -> list[str]:
+    return [
+        f"{product}/{state}/{description}_p{period}_v{version}.parquet"
+        for product, state, description in VALID_DATASETS[:2]
+        for period, version in PERIODS_AND_VERSIONS[:10]
+    ]
+
+
+def _datadoc_connection(
+    api_url: str | None,
+    token: str | None,
+) -> tuple[str, dict[str, str]]:
+    api_url = api_url or os.getenv(
+        "DATADOC_API_URL",
+        "https://metadata.intern.ssb.no",
+    )
+    token = token or os.getenv("DATADOC_API_TOKEN")
+    if token is None:
+        from dapla_auth_client import AuthClient
+
+        token = AuthClient.fetch_personal_token()
+    return api_url, {"Authorization": f"Bearer {token}"}
+
+
+def _get_datadoc_file(
+    api_url: str,
+    headers: dict[str, str],
+    path: str,
+) -> requests.Response:
+    file_path = f"gs://{BUCKET}/{path}"
+    return requests.get(
+        f"{api_url.rstrip('/')}/data-files/{quote(file_path, safe='')}",
+        headers=headers,
+        timeout=30,
+    )
