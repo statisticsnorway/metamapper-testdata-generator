@@ -245,7 +245,7 @@ def _datadoc_connection(
 ) -> tuple[str, dict[str, str]]:
     api_url = api_url or os.getenv(
         "DATADOC_API_URL",
-        "https://metadata.intern.ssb.no",
+        "https://metadata.intern.test.ssb.no",
     )
     token = token or os.getenv("DATADOC_API_TOKEN")
     if token is None:
@@ -261,8 +261,14 @@ def _get_datadoc_file(
     path: str,
 ) -> requests.Response:
     file_path = f"gs://{BUCKET}/{path}"
-    return requests.get(
-        f"{api_url.rstrip('/')}/data-files/{quote(file_path, safe='')}",
-        headers=headers,
-        timeout=30,
-    )
+    try:
+        return requests.get(
+            f"{api_url.rstrip('/')}/data-files/{quote(file_path, safe='')}",
+            headers=headers,
+            timeout=30,
+        )
+    except requests.RequestException as error:
+        raise RuntimeError(
+            f"Could not connect to Datadoc at {api_url}. "
+            "Set DATADOC_API_URL if another environment is required."
+        ) from error
