@@ -51,9 +51,10 @@ not available. It then creates `.venv`, installs `requirements.txt`, registers
 the project kernel, writes that kernel to the notebook metadata, and configures
 VS Code at the Dapla workspace level to use `.venv/bin/python`. Open
 `notebooks/generate_test_data.ipynb` and press Play. The notebook has two
-visible cells: `Populate database` and `Delete valid datasets`. The second
-cell deletes 20 valid datasets to simulate missing files. Their implementation
-is kept in `notebooks/populate_database.py`.
+visible cells: `Populate database`, `Delete valid datasets`, and `Check valid
+datasets in Datadoc`. The second cell deletes 20 valid datasets; the third
+checks that all 150 valid datasets are registered in Datadoc. Their
+implementation is kept in `notebooks/populate_database.py`.
 
 The bucket must be available to the Dapla Lab service and the selected access
 group must have write access. The default bucket is configured in the notebook

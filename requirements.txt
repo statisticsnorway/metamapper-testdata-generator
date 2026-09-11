@@ -1,4 +1,6 @@
 gcsfs>=2024.6.0
+dapla-auth-client>=1.2.1
 ipykernel>=6.29.0
 pandas>=2.2.0
 pyarrow>=16.0.0
+requests>=2.31.0
