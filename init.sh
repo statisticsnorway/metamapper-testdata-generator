@@ -77,13 +77,7 @@ PY
 mkdir -p "$PROJECT_DIR/.vscode"
 cat > "$PROJECT_DIR/.vscode/settings.json" <<EOF
 {
-    "python.defaultInterpreterPath": "$PROJECT_DIR/.venv/bin/python",
-    "jupyter.kernels.filter": [
-        {
-            "path": "$PROJECT_DIR/.venv/bin/python",
-            "type": "python"
-        }
-    ]
+    "python.defaultInterpreterPath": "$PROJECT_DIR/.venv/bin/python"
 }
 EOF
 
