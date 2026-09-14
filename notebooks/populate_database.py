@@ -12,7 +12,7 @@ import requests
 BUCKET = "ssb-play-enhjoern-a-data-produkt-test"
 DISPATCHER_URL = os.getenv(
     "METAMAPPER_DISPATCHER_URL",
-    "https://metamapper-dispatcher.test.ssb.no",
+    "https://metamapper-dispatcher.intern.test.ssb.no",
 )
 VALID_DATASETS = [
     ("befolkning", "inndata", "befolkning"),
