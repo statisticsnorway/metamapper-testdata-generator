@@ -59,7 +59,7 @@ def _write_parquet(fs: gcsfs.GCSFileSystem, path: str, data: pd.DataFrame) -> No
         data.to_parquet(file, index=False)
 
 
-def _trigger_dispatcher() -> None:
+def trigger_dispatcher() -> None:
     """Ask the dispatcher to reload its configured bucket."""
     print(f"[dispatcher] Triggering bucket reload at {DISPATCHER_URL}")
     response = requests.post(
@@ -135,9 +135,6 @@ def populate_database() -> None:
     print(f"Bucket:        gs://{BUCKET}")
     assert valid_count == 150
     assert invalid_count == 50
-    _trigger_dispatcher()
-
-
 def delete_valid_datasets() -> None:
     """Delete 20 valid datasets to simulate missing files."""
     print(f"[delete] Starting deletion in gs://{BUCKET}")
@@ -154,7 +151,6 @@ def delete_valid_datasets() -> None:
 
     print(f"Deleted valid datasets: {len(paths)}")
     print(f"Bucket:              gs://{BUCKET}")
-    _trigger_dispatcher()
 
 
 def check_deleted_datasets_in_datadoc(
