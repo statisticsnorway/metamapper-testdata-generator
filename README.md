@@ -50,14 +50,14 @@ Dapla Lab. The startup script also clones it there if the Dapla Git clone is
 not available. It then creates `.venv`, installs `requirements.txt`, registers
 the project kernel, writes that kernel to the notebook metadata, and configures
 VS Code at the Dapla workspace level to use `.venv/bin/python`. Open
-`notebooks/generate_test_data.ipynb` contains four titled steps: populate the
-bucket, check indexing, delete 20 valid datasets, and check deletion from
-Datadoc. The Datadoc GET checks use the public test endpoints. The implementation is kept in
+`notebooks/generate_test_data.ipynb` contains five titled steps: populate the
+bucket, trigger indexing, check indexing, delete 20 valid datasets, and check
+deletion from Datadoc. The Datadoc GET checks use the public test endpoints. The implementation is kept in
 `notebooks/populate_database.py`.
 
-After each GCS operation, the notebook triggers the test Metamapper dispatcher
-to reload its configured bucket. Override `METAMAPPER_DISPATCHER_URL` when
-using another dispatcher environment.
+The indexing cell triggers the test Metamapper dispatcher to reload its
+configured bucket. Override `METAMAPPER_DISPATCHER_URL` when using another
+dispatcher environment.
 
 
 The bucket must be available to the Dapla Lab service and the selected access
