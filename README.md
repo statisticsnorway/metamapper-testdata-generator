@@ -52,8 +52,7 @@ the project kernel, writes that kernel to the notebook metadata, and configures
 VS Code at the Dapla workspace level to use `.venv/bin/python`. Open
 `notebooks/generate_test_data.ipynb` contains four titled steps: populate the
 bucket, check indexing, delete 20 valid datasets, and check deletion from
-Datadoc. The notebook includes a warning that the Datadoc checks currently
-fail because the test service does not trust the LabID issuer. The implementation is kept in
+Datadoc. The Datadoc GET checks use the public test endpoints. The implementation is kept in
 `notebooks/populate_database.py`.
 
 After each GCS operation, the notebook triggers the test Metamapper dispatcher

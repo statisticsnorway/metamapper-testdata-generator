@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import base64
-import json
 import os
 import time
 from urllib.parse import quote
@@ -161,10 +159,9 @@ def delete_valid_datasets() -> None:
 
 def check_deleted_datasets_in_datadoc(
     api_url: str | None = None,
-    token: str | None = None,
 ) -> None:
     """Verify that the 20 deleted datasets are absent from Datadoc."""
-    api_url, headers = _datadoc_connection(api_url, token)
+    api_url = _datadoc_api_url(api_url)
     paths = _deleted_valid_paths()
     print(f"[datadoc] Checking {len(paths)} deleted datasets at {api_url}")
 
@@ -172,7 +169,7 @@ def check_deleted_datasets_in_datadoc(
     for attempt in range(1, 13):
         remaining = []
         for path in paths:
-            response = _get_datadoc_file(api_url, headers, path)
+            response = _get_datadoc_file(api_url, path)
             if response.status_code != 404:
                 remaining.append((path, response.status_code))
         if not remaining:
@@ -184,12 +181,6 @@ def check_deleted_datasets_in_datadoc(
     if remaining:
         for path, status in remaining:
             print(f"[datadoc]   {status}: {path}")
-        if any(status == 401 for _, status in remaining):
-            raise PermissionError(
-                "Datadoc rejected the token (HTTP 401). The token must include "
-                "the 'datadoc' audience. Set DATADOC_API_TOKEN or use the Dapla "
-                "authentication flow with audiences=['datadoc']."
-            )
         raise AssertionError("Deleted datasets are still indexed in Datadoc")
 
     print("[datadoc] All deleted datasets are absent")
@@ -197,10 +188,9 @@ def check_deleted_datasets_in_datadoc(
 
 def check_valid_datasets_in_datadoc(
     api_url: str | None = None,
-    token: str | None = None,
 ) -> None:
     """Verify that all valid datasets are registered in Datadoc."""
-    api_url, headers = _datadoc_connection(api_url, token)
+    api_url = _datadoc_api_url(api_url)
     paths = _valid_paths()
     print(f"[datadoc] Checking {len(paths)} valid datasets at {api_url}")
 
@@ -209,7 +199,7 @@ def check_valid_datasets_in_datadoc(
     for attempt in range(1, 13):
         next_missing = set()
         for path in missing:
-            response = _get_datadoc_file(api_url, headers, path)
+            response = _get_datadoc_file(api_url, path)
             if response.status_code == 404:
                 next_missing.add(path)
             elif response.status_code != 200:
@@ -234,12 +224,6 @@ def check_valid_datasets_in_datadoc(
             print(f"[datadoc]   {status}: {path}")
 
     if missing or unexpected_statuses:
-        if any(status == 401 for _, status in unexpected_statuses):
-            raise PermissionError(
-                "Datadoc rejected the token (HTTP 401). The token must include "
-                "the 'datadoc' audience. Set DATADOC_API_TOKEN or use the Dapla "
-                "authentication flow with audiences=['datadoc']."
-            )
         raise AssertionError("Datadoc does not contain all valid datasets")
 
     print("[datadoc] All valid datasets are registered")
@@ -253,62 +237,23 @@ def _deleted_valid_paths() -> list[str]:
     ]
 
 
-def _datadoc_connection(
-    api_url: str | None,
-    token: str | None,
-) -> tuple[str, dict[str, str]]:
+def _datadoc_api_url(api_url: str | None) -> str:
     api_url = api_url or os.getenv(
         "DATADOC_API_URL",
         "https://metadata.intern.test.ssb.no",
     )
-    token_source = "argument" if token is not None else "DATADOC_API_TOKEN"
-    token = token or os.getenv("DATADOC_API_TOKEN")
-    if token is None:
-        from dapla_auth_client import AuthClient
-
-        token = AuthClient.fetch_personal_token(audiences=["datadoc"])
-        token_source = "LabID audience=datadoc"
-
-    claims = _read_unverified_claims(token)
-    audience = claims.get("aud")
-    issuer = claims.get("iss")
     print(f"[datadoc] Endpoint: {api_url}")
-    print(f"[datadoc] Token source: {token_source}")
-    print(f"[datadoc] Token issuer: {issuer}")
-    print(f"[datadoc] Token audience: {audience}")
-    print(f"[datadoc] Token expiry: {claims.get('exp')}")
-    if audience != "datadoc" and not (
-        isinstance(audience, list) and "datadoc" in audience
-    ):
-        print("[datadoc] WARNING: token does not contain the 'datadoc' audience")
-    else:
-        print("[datadoc] Token is configured for Datadoc")
-    return api_url, {"Authorization": f"Bearer {token}"}
-
-
-def _read_unverified_claims(token: str) -> dict:
-    """Read JWT claims for diagnostics without validating or printing the token."""
-    try:
-        encoded_claims = token.split(".")[1]
-        padding = "=" * (-len(encoded_claims) % 4)
-        return json.loads(
-            base64.urlsafe_b64decode(encoded_claims + padding).decode("utf-8")
-        )
-    except (IndexError, ValueError, json.JSONDecodeError, UnicodeDecodeError) as error:
-        print(f"[datadoc] WARNING: could not decode token claims: {error}")
-        return {}
+    return api_url
 
 
 def _get_datadoc_file(
     api_url: str,
-    headers: dict[str, str],
     path: str,
 ) -> requests.Response:
     file_path = f"gs://{BUCKET}/{path}"
     try:
         return requests.get(
             f"{api_url.rstrip('/')}/data-files/{quote(file_path, safe='')}",
-            headers=headers,
             timeout=30,
         )
     except requests.RequestException as error:
