@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import os
-import time
 from urllib.parse import quote
 
 import gcsfs
@@ -148,11 +147,7 @@ def delete_valid_datasets() -> None:
     """Delete 20 valid datasets to simulate missing files."""
     print(f"[delete] Starting deletion in gs://{BUCKET}")
     filesystem = gcsfs.GCSFileSystem()
-    paths = [
-        f"{product}/{state}/{description}_p{period}_v{version}.parquet"
-        for product, state, description in VALID_DATASETS[:2]
-        for period, version in PERIODS_AND_VERSIONS[:10]
-    ]
+    paths = _deleted_valid_paths()
 
     for path in paths:
         filesystem.rm(f"{BUCKET}/{path}")
@@ -165,30 +160,52 @@ def delete_valid_datasets() -> None:
 def check_deleted_datasets_in_datadoc(
     api_url: str | None = None,
 ) -> None:
-    """Verify that the 20 deleted datasets are absent from Datadoc."""
+    """Verify deleted datasets are absent and other allowed datasets remain."""
     api_url = _datadoc_api_url(api_url)
-    paths = _deleted_valid_paths()
-    print(f"[datadoc] Checking {len(paths)} deleted datasets at {api_url}")
+    deleted_paths = set(_deleted_valid_paths())
+    retained_paths = set(_allowed_valid_paths()) - deleted_paths
+    print(f"[datadoc] Checking {len(deleted_paths)} deleted datasets at {api_url}")
+    print(f"[datadoc] Checking {len(retained_paths)} retained datasets at {api_url}")
 
-    remaining = [(path, 200) for path in paths]
-    for attempt in range(1, 13):
-        remaining = []
-        for path in paths:
-            response = _get_datadoc_file(api_url, path)
-            if response.status_code != 404:
-                remaining.append((path, response.status_code))
-        if not remaining:
-            break
-        print(f"[datadoc] Waiting for deletion ({attempt}/12)")
-        time.sleep(5)
+    still_indexed = []
+    deletion_errors = []
+    for path in deleted_paths:
+        response = _get_datadoc_file(api_url, path)
+        if response.status_code == 200:
+            still_indexed.append(path)
+        elif response.status_code != 404:
+            deletion_errors.append((path, response.status_code))
 
-    print(f"[datadoc] Still indexed: {len(remaining)}")
-    if remaining:
-        for path, status in remaining:
+    missing_retained = []
+    retention_errors = []
+    for path in retained_paths:
+        response = _get_datadoc_file(api_url, path)
+        if response.status_code == 404:
+            missing_retained.append(path)
+        elif response.status_code != 200:
+            retention_errors.append((path, response.status_code))
+
+    print(f"[datadoc] Removed:  {len(deleted_paths) - len(still_indexed) - len(deletion_errors)}")
+    print(f"[datadoc] Still indexed: {len(still_indexed)}")
+    print(f"[datadoc] Retained: {len(retained_paths) - len(missing_retained) - len(retention_errors)}")
+    print(f"[datadoc] Missing retained: {len(missing_retained)}")
+
+    if still_indexed:
+        print("[datadoc] Deleted datasets still indexed:")
+        for path in still_indexed:
+            print(f"[datadoc]   {path}")
+    if missing_retained:
+        print("[datadoc] Retained datasets missing from Datadoc:")
+        for path in missing_retained:
+            print(f"[datadoc]   {path}")
+    for paths in (deletion_errors, retention_errors):
+        for path, status in paths:
             print(f"[datadoc]   {status}: {path}")
-        raise AssertionError("Deleted datasets are still indexed in Datadoc")
 
-    print("[datadoc] All deleted datasets are absent")
+    if still_indexed or missing_retained or deletion_errors or retention_errors:
+        raise AssertionError("Datadoc deletion check failed")
+
+    print("[datadoc] Deleted datasets are removed and retained datasets remain ✅")
 
 
 def check_valid_datasets_in_datadoc(
@@ -263,12 +280,14 @@ def check_invalid_datasets_not_in_datadoc(
     print("[datadoc] No invalid datasets are registered ✅")
 
 
+def check_datasets_in_datadoc(api_url: str | None = None) -> None:
+    """Verify allowed datasets are registered and invalid datasets are absent."""
+    check_valid_datasets_in_datadoc(api_url)
+    check_invalid_datasets_not_in_datadoc(api_url)
+
+
 def _deleted_valid_paths() -> list[str]:
-    return [
-        f"{product}/{state}/{description}_p{period}_v{version}.parquet"
-        for product, state, description in VALID_DATASETS[:2]
-        for period, version in PERIODS_AND_VERSIONS[:10]
-    ]
+    return _allowed_valid_paths()[:20]
 
 
 def _datadoc_api_url(api_url: str | None) -> str:
