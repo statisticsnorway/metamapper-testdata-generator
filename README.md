@@ -63,7 +63,7 @@ there; generation, validation, deletion, and cleanup use the same plan.
 Invalid paths are split into naming-error paths, which should return `200` with
 `naming_standard_violations`, and rejected paths, which should return `404`.
 
-For cleanup, open `notebooks/cleanup_test_data.ipynb`. Its single code cell
+For cleanup, open `notebooks/utils/cleanup_test_data.ipynb`. Its single code cell
 requires typing `delete` before removing objects under the generator folders
 from the bucket. The cleanup leaves `personer2/` untouched.
 

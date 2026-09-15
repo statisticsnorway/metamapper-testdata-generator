@@ -15,6 +15,8 @@ from test_data_plan import (
     PARTIAL_DELETION_PATH,
     UNTOUCHED_PRODUCT,
     deletion_paths,
+    expected_dataset_identities,
+    expected_product_names,
     indexed_valid_paths,
     valid_paths,
 )
@@ -122,10 +124,54 @@ def check_deleted_datasets_in_datadoc(api_url: str | None = None) -> None:
 
 def check_valid_datasets_in_datadoc(api_url: str | None = None) -> None:
     api_url = _datadoc_api_url(api_url)
-    missing = [path for path in indexed_valid_paths() if _get_datadoc_file(api_url, path).status_code != 200]
-    if missing:
-        raise AssertionError(f"Datadoc does not contain all indexed valid datasets: {missing}")
-    print(f"[datadoc] All {len(indexed_valid_paths())} allowed datasets are registered ✅")
+    print("[datadoc] Checking expected data products, datasets, and files")
+    dataset_by_product = {product: [] for product in expected_product_names()}
+    for identity in expected_dataset_identities():
+        dataset_by_product[identity[0]].append(identity)
+
+    for product in expected_product_names():
+        product_status = _get_datadoc_product(api_url, product).status_code
+        print(f"[datadoc] Product '{product}': HTTP {product_status}")
+        if product_status != 200:
+            raise AssertionError(
+                f"Product check failed for '{product}': expected HTTP 200, "
+                f"got HTTP {product_status}"
+            )
+
+        datasets = _get_datadoc_datasets(api_url, product)
+        for identity in dataset_by_product[product]:
+            if not any(_dataset_matches(dataset, identity) for dataset in datasets):
+                raise AssertionError(
+                    f"Dataset check failed for product '{product}': expected "
+                    f"dataset {identity}, but it was not returned by Datadoc"
+                )
+            print(f"[datadoc]   Dataset '{identity[1]}/{identity[2]}': present")
+
+        product_paths = [
+            path for path in indexed_valid_paths() + NAMING_ERROR_PATHS
+            if path.startswith(f"{product}/")
+        ]
+        file_statuses = {
+            path: _get_datadoc_file(api_url, path).status_code
+            for path in product_paths
+        }
+        missing_files = [
+            f"{path} (HTTP {status})"
+            for path, status in file_statuses.items()
+            if status != 200
+        ]
+        if missing_files:
+            raise AssertionError(
+                f"File check failed for product '{product}': expected HTTP 200 for "
+                + ", ".join(missing_files)
+            )
+        print(f"[datadoc]   Files: {len(product_paths)} present")
+
+    print(
+        f"[datadoc] All {len(expected_product_names())} products, "
+        f"{len(expected_dataset_identities())} datasets, and "
+        f"{len(indexed_valid_paths()) + len(NAMING_ERROR_PATHS)} files are registered ✅"
+    )
 
 
 def check_invalid_datasets_not_in_datadoc(api_url: str | None = None) -> None:
