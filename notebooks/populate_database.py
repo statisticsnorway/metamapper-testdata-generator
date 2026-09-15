@@ -227,6 +227,42 @@ def check_valid_datasets_in_datadoc(
     print("[datadoc] All allowed datasets are registered ✅")
 
 
+def check_invalid_datasets_not_in_datadoc(
+    api_url: str | None = None,
+) -> None:
+    """Verify that deliberately invalid dataset paths are absent from Datadoc."""
+    api_url = _datadoc_api_url(api_url)
+    paths = _invalid_files()
+    print(f"[datadoc] Checking {len(paths)} invalid datasets at {api_url}")
+
+    indexed = []
+    unexpected_statuses = []
+    for path in paths:
+        response = _get_datadoc_file(api_url, path)
+        if response.status_code == 200:
+            indexed.append(path)
+        elif response.status_code != 404:
+            unexpected_statuses.append((path, response.status_code))
+
+    print(f"[datadoc] Not indexed: {len(paths) - len(indexed) - len(unexpected_statuses)}")
+    print(f"[datadoc] Indexed:     {len(indexed)}")
+    print(f"[datadoc] Errors:       {len(unexpected_statuses)}")
+
+    if indexed:
+        print("[datadoc] Invalid datasets found in Datadoc:")
+        for path in indexed:
+            print(f"[datadoc]   {path}")
+    if unexpected_statuses:
+        print("[datadoc] Unexpected responses:")
+        for path, status in unexpected_statuses:
+            print(f"[datadoc]   {status}: {path}")
+
+    if indexed or unexpected_statuses:
+        raise AssertionError("Datadoc contains invalid datasets")
+
+    print("[datadoc] No invalid datasets are registered ✅")
+
+
 def _deleted_valid_paths() -> list[str]:
     return [
         f"{product}/{state}/{description}_p{period}_v{version}.parquet"
