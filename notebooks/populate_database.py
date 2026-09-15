@@ -97,10 +97,10 @@ def _invalid_files() -> list[str]:
             f"{product}/statistikk/{name}_p2025_v1.parquet",
             f"{product}/statistikk/{name}_2025_v1.parquet",
             f"{product}/statistikk/{name}_p2025_1.parquet",
-            f"{product}/utdata/{name}_p2026-Q1.parquet",
-            f"{product}/utdata/{name}_p2026-Q1_v1.parquet",
-            f"{product}/utdata/{name}_2026-Q1_v1.parquet",
-            f"{product}/utdata/{name}_p2026-Q1_1.parquet",
+            f"{product}/invalid-state/{name}_p2026-Q1.parquet",
+            f"{product}/invalid-state/{name}_p2026-Q1_v1.parquet",
+            f"{product}/invalid-state/{name}_2026-Q1_v1.parquet",
+            f"{product}/invalid-state/{name}_p2026-Q1_1.parquet",
         ])
     return files + [
         f"{product}/{folder}/{name}_p2025_v1.parquet"
