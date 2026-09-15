@@ -144,7 +144,7 @@ def populate_database() -> None:
     assert valid_count == 150
     assert invalid_count == 50
 def delete_valid_datasets() -> None:
-    """Delete 20 valid datasets to simulate missing files."""
+    """Create partial, full-cascade, and untouched deletion scenarios."""
     print(f"[delete] Starting deletion in gs://{BUCKET}")
     filesystem = gcsfs.GCSFileSystem()
     paths = _deleted_valid_paths()
@@ -160,52 +160,109 @@ def delete_valid_datasets() -> None:
 def check_deleted_datasets_in_datadoc(
     api_url: str | None = None,
 ) -> None:
-    """Verify deleted datasets are absent and other allowed datasets remain."""
+    """Verify partial deletion, full cascade deletion, and untouched data."""
     api_url = _datadoc_api_url(api_url)
-    deleted_paths = set(_deleted_valid_paths())
-    retained_paths = set(_allowed_valid_paths()) - deleted_paths
-    print(f"[datadoc] Checking {len(deleted_paths)} deleted datasets at {api_url}")
-    print(f"[datadoc] Checking {len(retained_paths)} retained datasets at {api_url}")
+    all_paths = set(_allowed_valid_paths())
+    partial_path = _partial_deleted_path()
+    full_product = "befolkning"
+    untouched_product = "sysselsetting"
+    full_paths = {path for path in all_paths if path.startswith(f"{full_product}/")}
+    deleted_paths = {partial_path} | full_paths
 
-    still_indexed = []
-    deletion_errors = []
-    for path in deleted_paths:
-        response = _get_datadoc_file(api_url, path)
-        if response.status_code == 200:
-            still_indexed.append(path)
-        elif response.status_code != 404:
-            deletion_errors.append((path, response.status_code))
+    print("[datadoc] Test 1/3: partial deletion")
+    statuses = {
+        path: _get_datadoc_file(api_url, path).status_code
+        for path in all_paths
+    }
+    errors = [(path, status) for path, status in statuses.items() if status not in (200, 404)]
+    still_indexed = [path for path in deleted_paths if statuses[path] == 200]
+    missing_retained = [path for path in all_paths - deleted_paths if statuses[path] == 404]
 
-    missing_retained = []
-    retention_errors = []
-    for path in retained_paths:
-        response = _get_datadoc_file(api_url, path)
-        if response.status_code == 404:
-            missing_retained.append(path)
-        elif response.status_code != 200:
-            retention_errors.append((path, response.status_code))
+    partial_dataset = _dataset_identity(partial_path)
+    datasets = _get_datadoc_datasets(api_url, partial_dataset[0])
+    partial_remains = any(_dataset_matches(item, partial_dataset) for item in datasets)
 
-    print(f"[datadoc] Removed:  {len(deleted_paths) - len(still_indexed) - len(deletion_errors)}")
-    print(f"[datadoc] Still indexed: {len(still_indexed)}")
-    print(f"[datadoc] Retained: {len(retained_paths) - len(missing_retained) - len(retention_errors)}")
-    print(f"[datadoc] Missing retained: {len(missing_retained)}")
+    if statuses[partial_path] != 404:
+        raise AssertionError(
+            "Partial deletion failed: "
+            f"{partial_path} returned HTTP {statuses[partial_path]}, expected 404"
+        )
+    if not partial_remains:
+        raise AssertionError(
+            "Partial deletion cascade failed: dataset "
+            f"{partial_dataset} disappeared after deleting only {partial_path}"
+        )
+    print(
+        "[datadoc] Partial deletion passed: removed "
+        f"{partial_path}; dataset {partial_dataset} remains"
+    )
 
+    print("[datadoc] Test 2/3: full cascade deletion")
+    full_datasets = _get_datadoc_datasets(api_url, full_product)
+    full_product_status = _get_datadoc_product(api_url, full_product).status_code
     if still_indexed:
-        print("[datadoc] Deleted datasets still indexed:")
-        for path in still_indexed:
-            print(f"[datadoc]   {path}")
+        raise AssertionError(
+            "Full cascade deletion failed: deleted files are still indexed: "
+            + ", ".join(sorted(still_indexed))
+        )
+    if full_datasets:
+        raise AssertionError(
+            "Full cascade deletion failed: data product "
+            f"{full_product} still has datasets: {full_datasets}"
+        )
+    if full_product_status != 404:
+        raise AssertionError(
+            "Full cascade deletion failed: data product "
+            f"{full_product} returned HTTP {full_product_status}, expected 404"
+        )
+    print(
+        "[datadoc] Full cascade deletion passed: all files, datasets, and "
+        f"data product {full_product} were removed"
+    )
+
+    print("[datadoc] Test 3/3: untouched data")
+    untouched_datasets = _get_datadoc_datasets(api_url, untouched_product)
+    untouched_product_status = _get_datadoc_product(api_url, untouched_product).status_code
+
+    untouched_paths = [
+        path for path in all_paths if path.startswith(f"{untouched_product}/")
+    ]
+    missing_untouched = [path for path in untouched_paths if statuses[path] != 200]
+    if missing_untouched:
+        raise AssertionError(
+            "Untouched data test failed: expected HTTP 200 for "
+            "these datasets, but got: "
+            + ", ".join(
+                f"{path} (HTTP {statuses[path]})" for path in sorted(missing_untouched)
+            )
+        )
+    if untouched_product_status != 200:
+        raise AssertionError(
+            "Untouched data test failed: data product "
+            f"{untouched_product} returned HTTP {untouched_product_status}, expected 200"
+        )
+    if not untouched_datasets:
+        raise AssertionError(
+            "Untouched data test failed: data product "
+            f"{untouched_product} has no datasets"
+        )
+    print(
+        "[datadoc] Untouched data test passed: "
+        f"{untouched_product} and its datasets remain available"
+    )
+
     if missing_retained:
-        print("[datadoc] Retained datasets missing from Datadoc:")
-        for path in missing_retained:
-            print(f"[datadoc]   {path}")
-    for paths in (deletion_errors, retention_errors):
-        for path, status in paths:
-            print(f"[datadoc]   {status}: {path}")
+        raise AssertionError(
+            "Retained dataset test failed: expected HTTP 200 for "
+            + ", ".join(sorted(missing_retained))
+        )
+    if errors:
+        raise AssertionError(
+            "Deletion check returned unexpected HTTP statuses: "
+            + ", ".join(f"{path} (HTTP {status})" for path, status in errors)
+        )
 
-    if still_indexed or missing_retained or deletion_errors or retention_errors:
-        raise AssertionError("Datadoc deletion check failed")
-
-    print("[datadoc] Deleted datasets are removed and retained datasets remain ✅")
+    print("[datadoc] All deletion tests passed ✅")
 
 
 def check_valid_datasets_in_datadoc(
@@ -287,7 +344,51 @@ def check_datasets_in_datadoc(api_url: str | None = None) -> None:
 
 
 def _deleted_valid_paths() -> list[str]:
-    return _allowed_valid_paths()[:20]
+    paths = _allowed_valid_paths()
+    partial_path = _partial_deleted_path()
+    full_paths = [path for path in paths if path.startswith("befolkning/")]
+    return [partial_path, *full_paths]
+
+
+def _partial_deleted_path() -> str:
+    return "sysselsetting/klargjorte-data/sysselsetting_p2024_v1.parquet"
+
+
+def _dataset_identity(path: str) -> tuple[str, str, str]:
+    product, state, filename = path.split("/", 2)
+    return product, state, filename.split("_p", 1)[0]
+
+
+def _dataset_matches(dataset: dict, identity: tuple[str, str, str]) -> bool:
+    state_names = {
+        "INPUT_DATA": "inndata",
+        "PROCESSED_DATA": "klargjorte-data",
+        "STATISTICS": "statistikk",
+        "OUTPUT_DATA": "utdata",
+    }
+    return (
+        dataset.get("product_short_name"),
+        state_names.get(dataset.get("dataset_state"), dataset.get("dataset_state")),
+        dataset.get("short_description"),
+    ) == (identity[0], identity[1], identity[2])
+
+
+def _get_datadoc_datasets(api_url: str, product: str) -> list[dict]:
+    response = requests.get(
+        f"{api_url.rstrip('/')}/datasets",
+        params={"product_short_name": product},
+        timeout=30,
+    )
+    if response.status_code != 200:
+        raise RuntimeError(f"Datadoc dataset lookup failed with HTTP {response.status_code}")
+    return response.json()
+
+
+def _get_datadoc_product(api_url: str, product: str) -> requests.Response:
+    return requests.get(
+        f"{api_url.rstrip('/')}/data-products/{quote(product, safe='')}",
+        timeout=30,
+    )
 
 
 def _datadoc_api_url(api_url: str | None) -> str:
