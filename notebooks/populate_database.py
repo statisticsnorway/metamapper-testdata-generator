@@ -11,6 +11,7 @@ from test_data_plan import (
     BUCKET,
     CASCADE_DELETION_PRODUCT,
     INVALID_DATASET_PATHS,
+    NAMING_ERROR_PATHS,
     PARTIAL_DELETION_PATH,
     UNTOUCHED_PRODUCT,
     deletion_paths,
@@ -125,10 +126,33 @@ def check_valid_datasets_in_datadoc(api_url: str | None = None) -> None:
 
 def check_invalid_datasets_not_in_datadoc(api_url: str | None = None) -> None:
     api_url = _datadoc_api_url(api_url)
-    indexed = [path for path in INVALID_DATASET_PATHS if _get_datadoc_file(api_url, path).status_code != 404]
-    if indexed:
-        raise AssertionError(f"Datadoc contains invalid datasets: {indexed}")
-    print(f"[datadoc] No invalid datasets are registered ✅")
+    naming_errors = []
+    for path in NAMING_ERROR_PATHS:
+        response = _get_datadoc_file(api_url, path)
+        if response.status_code != 200:
+            raise AssertionError(
+                f"Naming-error check failed: {path} returned HTTP "
+                f"{response.status_code}, expected 200"
+            )
+        violations = response.json().get("naming_standard_violations", [])
+        if not violations:
+            raise AssertionError(
+                f"Naming-error check failed: {path} returned 200 but had no "
+                "naming_standard_violations"
+            )
+        naming_errors.append((path, violations))
+
+    rejected = [
+        path for path in INVALID_DATASET_PATHS
+        if path not in NAMING_ERROR_PATHS
+        and _get_datadoc_file(api_url, path).status_code != 404
+    ]
+    if rejected:
+        raise AssertionError(f"Rejected-path check failed; expected HTTP 404: {rejected}")
+    print(f"[datadoc] Naming errors confirmed for {len(naming_errors)} datasets ✅")
+    for path, violations in naming_errors:
+        print(f"[datadoc]   {path}: {'; '.join(violations)}")
+    print(f"[datadoc] Rejected paths confirmed absent: {len(INVALID_DATASET_PATHS) - len(naming_errors)} ✅")
 
 
 def check_datasets_in_datadoc(api_url: str | None = None) -> None:

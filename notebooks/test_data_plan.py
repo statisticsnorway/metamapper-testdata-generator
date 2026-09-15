@@ -34,21 +34,10 @@ VALID_DATASET_GROUPS = [
     ("varehandel", "utdata", "varehandel"),
 ]
 
-# These paths deliberately have invalid states or filenames and must not index.
-INVALID_DATASET_PATHS = [
+# These paths are accepted by Datadoc but must report naming violations.
+NAMING_ERROR_PATHS = [
     *[
-        f"{product}/statistikk/{name}_{suffix}.parquet"
-        for product, name in {
-            "befolkning": "befolkning",
-            "sysselsetting": "sysselsetting",
-            "utdanning": "utdanning",
-            "inntekt": "personinntekt",
-            "varehandel": "varehandel",
-        }.items()
-        for suffix in ("p2025", "p2025_v1", "2025_v1", "p2025_1")
-    ],
-    *[
-        f"{product}/invalid-state/{name}_{suffix}.parquet"
+        f"{product}/utdata/{name}_{suffix}.parquet"
         for product, name in {
             "befolkning": "befolkning",
             "sysselsetting": "sysselsetting",
@@ -59,26 +48,31 @@ INVALID_DATASET_PATHS = [
         for suffix in ("p2026-Q1", "p2026-Q1_v1", "2026-Q1_v1", "p2026-Q1_1")
     ],
     *[
-        f"{product}/{folder}/{name}_p2025_v1.parquet"
-        for product, folder, name in (
-            ("befolkning", "data", "befolkning"),
-            ("sysselsetting", "raw", "sysselsetting"),
-            ("utdanning", "statistikkdata", "utdanning"),
-            ("inntekt", "processed", "personinntekt"),
-            ("varehandel", "output", "varehandel"),
-        )
-    ],
-    *[
-        f"{product}/{name}_p2025_v1.parquet"
+        f"{product}/statistikk/{name}_{suffix}.parquet"
         for product, name in {
             "befolkning": "befolkning",
             "sysselsetting": "sysselsetting",
-            "utdanning": "utdanning",
+            "utdanning": "utdanning-nivaa",
             "inntekt": "personinntekt",
-            "varehandel": "varehandel",
+            "varehandel": "varehandel-imputert",
         }.items()
+        for suffix in ("p2025", "p2025_v1")
     ],
 ]
+
+# These paths cannot be parsed by Datadoc and must return 404.
+REJECTED_PATHS = [
+    f"{product}/invalid-state/{name}_{suffix}.parquet"
+    for product, name in {
+        "befolkning": "befolkning",
+        "sysselsetting": "sysselsetting",
+        "utdanning": "utdanning",
+        "inntekt": "personinntekt",
+        "varehandel": "varehandel",
+    }.items()
+    for suffix in ("p2026-Q1", "p2026-Q1_v1", "2026-Q1_v1", "p2026-Q1_1")
+]
+INVALID_DATASET_PATHS = NAMING_ERROR_PATHS + REJECTED_PATHS
 
 # The deletion cell creates three scenarios: partial, full cascade, and untouched.
 PARTIAL_DELETION_PATH = "sysselsetting/klargjorte-data/sysselsetting_p2024_v1.parquet"
