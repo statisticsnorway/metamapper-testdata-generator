@@ -263,6 +263,12 @@ def check_invalid_datasets_not_in_datadoc(
     print("[datadoc] No invalid datasets are registered ✅")
 
 
+def check_datasets_in_datadoc(api_url: str | None = None) -> None:
+    """Verify allowed datasets are registered and invalid datasets are absent."""
+    check_valid_datasets_in_datadoc(api_url)
+    check_invalid_datasets_not_in_datadoc(api_url)
+
+
 def _deleted_valid_paths() -> list[str]:
     return [
         f"{product}/{state}/{description}_p{period}_v{version}.parquet"
