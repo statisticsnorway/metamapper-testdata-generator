@@ -181,7 +181,6 @@ def check_deleted_datasets_in_datadoc(
     partial_dataset = _dataset_identity(partial_path)
     datasets = _get_datadoc_datasets(api_url, partial_dataset[0])
     partial_remains = any(_dataset_matches(item, partial_dataset) for item in datasets)
-
     if statuses[partial_path] != 404:
         raise AssertionError(
             "Partial deletion failed: "
@@ -227,7 +226,10 @@ def check_deleted_datasets_in_datadoc(
     untouched_paths = [
         path for path in all_paths if path.startswith(f"{untouched_product}/")
     ]
-    missing_untouched = [path for path in untouched_paths if statuses[path] != 200]
+    missing_untouched = [
+        path for path in untouched_paths
+        if path != partial_path and statuses[path] != 200
+    ]
     if missing_untouched:
         raise AssertionError(
             "Untouched data test failed: expected HTTP 200 for "
