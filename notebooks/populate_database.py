@@ -85,7 +85,8 @@ def check_deleted_datasets_in_datadoc(api_url: str | None = None) -> None:
     api_url = _datadoc_api_url(api_url)
     all_paths = set(indexed_valid_paths())
     deleted_paths = set(deletion_paths())
-    statuses = {path: _get_datadoc_file(api_url, path).status_code for path in all_paths}
+    check_paths = all_paths | set(NAMING_ERROR_PATHS)
+    statuses = {path: _get_datadoc_file(api_url, path).status_code for path in check_paths}
 
     print("[datadoc] Test 1/3: partial deletion")
     partial_identity = _dataset_identity(PARTIAL_DELETION_PATH)
@@ -106,7 +107,10 @@ def check_deleted_datasets_in_datadoc(api_url: str | None = None) -> None:
     print(f"[datadoc] Full cascade deletion passed: all files, datasets, and data product {CASCADE_DELETION_PRODUCT} were removed")
 
     print("[datadoc] Test 3/3: untouched data")
-    untouched_paths = [path for path in all_paths if path.startswith(f"{UNTOUCHED_PRODUCT}/") and path != PARTIAL_DELETION_PATH]
+    untouched_paths = [
+        path for path in check_paths
+        if path.startswith(f"{UNTOUCHED_PRODUCT}/") and path != PARTIAL_DELETION_PATH
+    ]
     missing = [f"{path} (HTTP {statuses[path]})" for path in untouched_paths if statuses[path] != 200]
     untouched_datasets = _get_datadoc_datasets(api_url, UNTOUCHED_PRODUCT)
     untouched_product_status = _get_datadoc_product(api_url, UNTOUCHED_PRODUCT).status_code
