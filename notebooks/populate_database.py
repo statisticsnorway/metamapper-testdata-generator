@@ -15,19 +15,19 @@ DISPATCHER_URL = os.getenv(
 )
 VALID_DATASETS = [
     ("befolkning", "inndata", "befolkning"),
-    ("befolkning", "statistikk", "befolkning-kommuner"),
+    ("befolkning", "klargjorte-data", "befolkning"),
     ("befolkning", "utdata", "befolkning"),
     ("sysselsetting", "inndata", "sysselsetting"),
-    ("sysselsetting", "statistikk", "sysselsetting-kjonn"),
+    ("sysselsetting", "klargjorte-data", "sysselsetting"),
     ("sysselsetting", "utdata", "sysselsetting"),
     ("utdanning", "klargjorte-data", "utdanning"),
     ("utdanning", "statistikk", "utdanning-nivaa"),
     ("utdanning", "utdata", "utdanning"),
     ("inntekt", "inndata", "personinntekt"),
-    ("inntekt", "statistikk", "personinntekt-kommuner"),
+    ("inntekt", "klargjorte-data", "personinntekt"),
     ("inntekt", "utdata", "personinntekt"),
-    ("varehandel", "inndata", "varehandel"),
     ("varehandel", "statistikk", "varehandel-imputert"),
+    ("varehandel", "klargjorte-data", "varehandel"),
     ("varehandel", "utdata", "varehandel"),
 ]
 PERIODS_AND_VERSIONS = [
@@ -282,8 +282,8 @@ def check_invalid_datasets_not_in_datadoc(
 
 def check_datasets_in_datadoc(api_url: str | None = None) -> None:
     """Verify allowed datasets are registered and invalid datasets are absent."""
-    check_valid_datasets_in_datadoc(api_url)
     check_invalid_datasets_not_in_datadoc(api_url)
+    check_valid_datasets_in_datadoc(api_url)
 
 
 def _deleted_valid_paths() -> list[str]:
