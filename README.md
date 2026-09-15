@@ -56,6 +56,9 @@ deletes 20 valid datasets, re-indexes them, and checks that they are removed fro
 Datadoc. The Datadoc GET checks use the public test endpoints. The implementation is kept in
 `notebooks/populate_database.py`.
 
+For cleanup, open `notebooks/cleanup_test_data.ipynb`. Its single code cell
+requires typing `delete` before removing the generated files from the bucket.
+
 The indexing cell triggers the test Metamapper dispatcher to reload its
 configured bucket. Override `METAMAPPER_DISPATCHER_URL` when using another
 dispatcher environment.
