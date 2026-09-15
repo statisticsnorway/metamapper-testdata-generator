@@ -111,6 +111,7 @@ def deletion_paths() -> list[str]:
     return [
         PARTIAL_DELETION_PATH,
         *[path for path in indexed_valid_paths() if path.startswith(f"{CASCADE_DELETION_PRODUCT}/")],
+        *[path for path in NAMING_ERROR_PATHS if path.startswith(f"{CASCADE_DELETION_PRODUCT}/")],
     ]
 
 
