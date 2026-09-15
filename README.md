@@ -50,9 +50,10 @@ Dapla Lab. The startup script also clones it there if the Dapla Git clone is
 not available. It then creates `.venv`, installs `requirements.txt`, registers
 the project kernel, writes that kernel to the notebook metadata, and configures
 VS Code at the Dapla workspace level to use `.venv/bin/python`. Open
-`notebooks/generate_test_data.ipynb` contains six steps: populate the bucket,
-trigger indexing, check allowed and invalid datasets, delete 20 valid datasets,
-and check deletion from Datadoc. The Datadoc GET checks use the public test endpoints. The implementation is kept in
+`notebooks/generate_test_data.ipynb` contains two three-step flows. The add flow
+adds datasets, indexes them, and checks valid and invalid paths. The delete flow
+deletes 20 valid datasets, re-indexes them, and checks that they are removed from
+Datadoc. The Datadoc GET checks use the public test endpoints. The implementation is kept in
 `notebooks/populate_database.py`.
 
 The indexing cell triggers the test Metamapper dispatcher to reload its
