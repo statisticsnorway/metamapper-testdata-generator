@@ -57,6 +57,10 @@ third product; then it re-indexes and checks partial retention and cascade remov
 Datadoc. The Datadoc GET checks use the public test endpoints. The implementation is kept in
 `notebooks/populate_database.py`.
 
+The complete generated-file inventory and deletion scenarios are maintained in
+`notebooks/test_data_plan.py`. Add a new valid dataset group or invalid path
+there; generation, validation, deletion, and cleanup use the same plan.
+
 For cleanup, open `notebooks/cleanup_test_data.ipynb`. Its single code cell
 requires typing `delete` before removing objects under the generator folders
 from the bucket. The cleanup leaves `personer2/` untouched.
