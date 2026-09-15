@@ -190,21 +190,14 @@ def check_valid_datasets_in_datadoc(
     paths = _valid_paths()
     print(f"[datadoc] Checking {len(paths)} valid datasets at {api_url}")
 
-    missing = set(paths)
+    missing = set()
     unexpected_statuses = []
-    for attempt in range(1, 13):
-        next_missing = set()
-        for path in missing:
-            response = _get_datadoc_file(api_url, path)
-            if response.status_code == 404:
-                next_missing.add(path)
-            elif response.status_code != 200:
-                unexpected_statuses.append((path, response.status_code))
-        missing = next_missing
-        if not missing or unexpected_statuses:
-            break
-        print(f"[datadoc] Waiting for indexing ({attempt}/12)")
-        time.sleep(5)
+    for path in paths:
+        response = _get_datadoc_file(api_url, path)
+        if response.status_code == 404:
+            missing.add(path)
+        elif response.status_code != 200:
+            unexpected_statuses.append((path, response.status_code))
 
     print(f"[datadoc] Found:   {len(paths) - len(missing) - len(unexpected_statuses)}")
     print(f"[datadoc] Missing:  {len(missing)}")
