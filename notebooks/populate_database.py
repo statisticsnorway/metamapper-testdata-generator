@@ -36,6 +36,7 @@ PERIODS_AND_VERSIONS = [
     ("2025-Q2", 1), ("2025-Q3", 1), ("2025-Q4", 1), ("2026-Q1", 2),
     ("2026-Q2", 2), ("2026-Q3", 2),
 ]
+ALLOWED_DATASET_STATES = {"klargjorte-data", "utdata"}
 
 
 def _valid_paths() -> list[str]:
@@ -43,6 +44,14 @@ def _valid_paths() -> list[str]:
         f"{product}/{state}/{description}_p{period}_v{version}.parquet"
         for product, state, description in VALID_DATASETS
         for period, version in PERIODS_AND_VERSIONS
+    ]
+
+
+def _allowed_valid_paths() -> list[str]:
+    return [
+        path
+        for path in _valid_paths()
+        if any(f"/{state}/" in path for state in ALLOWED_DATASET_STATES)
     ]
 
 
@@ -187,7 +196,7 @@ def check_valid_datasets_in_datadoc(
 ) -> None:
     """Verify that all valid datasets are registered in Datadoc."""
     api_url = _datadoc_api_url(api_url)
-    paths = _valid_paths()
+    paths = _allowed_valid_paths()
     print(f"[datadoc] Checking {len(paths)} valid datasets at {api_url}")
 
     missing = set()
@@ -215,7 +224,7 @@ def check_valid_datasets_in_datadoc(
     if missing or unexpected_statuses:
         raise AssertionError("Datadoc does not contain all valid datasets")
 
-    print("[datadoc] All valid datasets are registered")
+    print("[datadoc] All allowed datasets are registered ✅")
 
 
 def _deleted_valid_paths() -> list[str]:
