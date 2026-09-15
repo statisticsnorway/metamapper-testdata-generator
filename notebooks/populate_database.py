@@ -142,11 +142,12 @@ def check_invalid_datasets_not_in_datadoc(api_url: str | None = None) -> None:
             )
         naming_errors.append((path, violations))
 
-    rejected = [
-        path for path in INVALID_DATASET_PATHS
-        if path not in NAMING_ERROR_PATHS
-        and _get_datadoc_file(api_url, path).status_code != 404
-    ]
+    rejected = []
+    for path in INVALID_DATASET_PATHS:
+        if path in NAMING_ERROR_PATHS:
+            continue
+        if _get_datadoc_file(api_url, path).status_code != 404:
+            rejected.append(path)
     if rejected:
         raise AssertionError(f"Rejected-path check failed; expected HTTP 404: {rejected}")
     print(f"[datadoc] Naming errors confirmed for {len(naming_errors)} datasets ✅")

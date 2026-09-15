@@ -37,7 +37,7 @@ VALID_DATASET_GROUPS = [
 # These paths are accepted by Datadoc but must report naming violations.
 NAMING_ERROR_PATHS = [
     *[
-        f"{product}/utdata/{name}_{suffix}.parquet"
+        f"{product}/klargjorte-data/{name}_{suffix}.parquet"
         for product, name in {
             "befolkning": "befolkning",
             "sysselsetting": "sysselsetting",
