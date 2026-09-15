@@ -34,10 +34,11 @@ VALID_DATASET_GROUPS = [
     ("varehandel", "utdata", "varehandel"),
 ]
 
-# These paths are accepted by Datadoc but must report naming violations.
+# These paths have a recognized state and parseable identity, so Datadoc saves
+# them while reporting naming-standard violations.
 NAMING_ERROR_PATHS = [
     *[
-        f"{product}/utdata/{name}_{suffix}.parquet"
+        f"{product}/klargjorte-data/{name}_{suffix}.parquet"
         for product, name in {
             "befolkning": "befolkning",
             "sysselsetting": "sysselsetting",
@@ -45,18 +46,12 @@ NAMING_ERROR_PATHS = [
             "inntekt": "personinntekt",
             "varehandel": "varehandel",
         }.items()
-        for suffix in ("p2026-Q1", "p2026-Q1_v1", "2026-Q1_v1", "p2026-Q1_1")
-    ],
-    *[
-        f"{product}/statistikk/{name}_{suffix}.parquet"
-        for product, name in {
-            "befolkning": "befolkning",
-            "sysselsetting": "sysselsetting",
-            "utdanning": "utdanning-nivaa",
-            "inntekt": "personinntekt",
-            "varehandel": "varehandel-imputert",
-        }.items()
-        for suffix in ("p2025", "p2025_v1")
+        for suffix in (
+            "p2026-Q1",
+            "p2026-Q1_vx",
+            "p2026-Q1_p2026-01_v1",
+            "p2026-Q1_p2026-Q2_p2026-Q3_v1",
+        )
     ],
 ]
 
@@ -71,6 +66,26 @@ REJECTED_PATHS = [
         "varehandel": "varehandel",
     }.items()
     for suffix in ("p2026-Q1", "p2026-Q1_v1", "2026-Q1_v1", "p2026-Q1_1")
+]
+REJECTED_PATHS += [
+    f"{product}/{name}_p2026-Q1_v1.parquet"
+    for product, name in {
+        "befolkning": "befolkning",
+        "sysselsetting": "sysselsetting",
+        "utdanning": "utdanning",
+        "inntekt": "personinntekt",
+        "varehandel": "varehandel",
+    }.items()
+]
+REJECTED_PATHS += [
+    f"{product}/unknown-state/{name}_p2026-Q1_v1.parquet"
+    for product, name in {
+        "befolkning": "befolkning",
+        "sysselsetting": "sysselsetting",
+        "utdanning": "utdanning",
+        "inntekt": "personinntekt",
+        "varehandel": "varehandel",
+    }.items()
 ]
 INVALID_DATASET_PATHS = NAMING_ERROR_PATHS + REJECTED_PATHS
 
