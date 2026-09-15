@@ -107,6 +107,18 @@ def indexed_valid_paths() -> list[str]:
     return [path for path in valid_paths() if "/klargjorte-data/" in path or "/utdata/" in path]
 
 
+def expected_product_names() -> list[str]:
+    return sorted({path.split("/", 1)[0] for path in indexed_valid_paths()})
+
+
+def expected_dataset_identities() -> list[tuple[str, str, str]]:
+    paths = indexed_valid_paths() + NAMING_ERROR_PATHS
+    return sorted({
+        (product, state, filename.split("_p", 1)[0])
+        for product, state, filename in (path.split("/", 2) for path in paths)
+    })
+
+
 def deletion_paths() -> list[str]:
     return [
         PARTIAL_DELETION_PATH,
