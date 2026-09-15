@@ -60,6 +60,8 @@ Datadoc. The Datadoc GET checks use the public test endpoints. The implementatio
 The complete generated-file inventory and deletion scenarios are maintained in
 `notebooks/test_data_plan.py`. Add a new valid dataset group or invalid path
 there; generation, validation, deletion, and cleanup use the same plan.
+Invalid paths are split into naming-error paths, which should return `200` with
+`naming_standard_violations`, and rejected paths, which should return `404`.
 
 For cleanup, open `notebooks/cleanup_test_data.ipynb`. Its single code cell
 requires typing `delete` before removing objects under the generator folders
