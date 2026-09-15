@@ -57,7 +57,8 @@ Datadoc. The Datadoc GET checks use the public test endpoints. The implementatio
 `notebooks/populate_database.py`.
 
 For cleanup, open `notebooks/cleanup_test_data.ipynb`. Its single code cell
-requires typing `delete` before removing the generated files from the bucket.
+requires typing `delete` before removing Parquet files under the five generator
+product folders from the bucket.
 
 The indexing cell triggers the test Metamapper dispatcher to reload its
 configured bucket. Override `METAMAPPER_DISPATCHER_URL` when using another
